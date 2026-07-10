@@ -202,6 +202,82 @@
     </section>
 
     <section class="card">
+
+        <div class="grid" style="margin-bottom: 18px;">
+
+    <div>
+        <label for="bridgeId">Bridge ID</label>
+        <input
+            type="text"
+            id="bridgeId"
+            placeholder="Example: BRG-101"
+            value="BRG-001"
+            style="
+                width: 100%;
+                padding: 13px;
+                border-radius: 10px;
+                border: 1px solid #374151;
+                background: #0f172a;
+                color: white;
+            "
+        >
+    </div>
+
+    <div>
+        <label for="bridgeName">Bridge Name</label>
+        <input
+            type="text"
+            id="bridgeName"
+            placeholder="Example: PVNR Flyover"
+            value="Demo RCC Bridge"
+            style="
+                width: 100%;
+                padding: 13px;
+                border-radius: 10px;
+                border: 1px solid #374151;
+                background: #0f172a;
+                color: white;
+            "
+        >
+    </div>
+
+    <div>
+        <label for="location">Location</label>
+        <input
+            type="text"
+            id="location"
+            placeholder="Example: Hyderabad"
+            value="Hyderabad"
+            style="
+                width: 100%;
+                padding: 13px;
+                border-radius: 10px;
+                border: 1px solid #374151;
+                background: #0f172a;
+                color: white;
+            "
+        >
+    </div>
+
+    <div>
+        <label for="engineerName">Engineer Name</label>
+        <input
+            type="text"
+            id="engineerName"
+            placeholder="Example: Ram Charan Sai"
+            value="Ram Charan Sai"
+            style="
+                width: 100%;
+                padding: 13px;
+                border-radius: 10px;
+                border: 1px solid #374151;
+                background: #0f172a;
+                color: white;
+            "
+        >
+    </div>
+
+</div>
         <label for="imageInput">Upload bridge image</label>
         <input type="file" id="imageInput" accept="image/*">
 
@@ -242,7 +318,10 @@
                     <span>Average Confidence</span>
                     <strong id="averageConfidence">0%</strong>
                 </div>
-
+<div class="metric">
+    <span>Infrastructure Health Score</span>
+    <strong id="healthScore">100 / 100</strong>
+</div>
                 <div class="metric">
                     <span>Preliminary Priority</span>
                     <strong id="priorityText">UNKNOWN</strong>
@@ -268,7 +347,44 @@
     </section>
 
 </div>
+<section class="card" style="margin-top: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px;">
+        <div>
+            <h3>Inspection History</h3>
+            <p style="color: #9ca3af; margin-top: 6px;">
+                Previous inspections stored in the local database.
+            </p>
+        </div>
 
+        <button onclick="loadInspections()">
+            Refresh History
+        </button>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: left; color: #9ca3af; border-bottom: 1px solid #374151;">
+                    <th style="padding: 12px;">ID</th>
+                    <th style="padding: 12px;">Bridge</th>
+                    <th style="padding: 12px;">Location</th>
+                    <th style="padding: 12px;">Defects</th>
+                    <th style="padding: 12px;">Confidence</th>
+                    <th style="padding: 12px;">Priority</th>
+                    <th style="padding: 12px;">Inspection Time</th>
+                </tr>
+            </thead>
+
+            <tbody id="inspectionHistoryBody">
+                <tr>
+                    <td colspan="7" style="padding: 18px; color: #9ca3af;">
+                        Click “Refresh History” to load saved inspections.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
 <footer>
     AI-assisted visual prioritization only. Final assessment must be performed by a qualified engineer.
 </footer>
@@ -292,9 +408,30 @@
             URL.createObjectURL(file);
 
         const formData = new FormData();
-        formData.append("file", file);
 
-        analyzeButton.disabled = true;
+formData.append("file", file);
+
+formData.append(
+    "bridge_id",
+    document.getElementById("bridgeId").value
+);
+
+formData.append(
+    "bridge_name",
+    document.getElementById("bridgeName").value
+);
+
+formData.append(
+    "location",
+    document.getElementById("location").value
+);
+
+formData.append(
+    "engineer_name",
+    document.getElementById("engineerName").value
+);
+
+analyzeButton.disabled = true;
         statusText.textContent = "Running AI inspection...";
 
         try {
@@ -319,6 +456,8 @@
 
             document.getElementById("averageConfidence").textContent =
                 `${data.average_confidence}%`;
+                document.getElementById("healthScore").textContent =
+    `${data.health_score} / 100`;
 
             const priorityElement =
                 document.getElementById("priorityText");
@@ -370,6 +509,82 @@
             analyzeButton.disabled = false;
         }
     }
+
+    async function loadInspections() {
+    const historyBody = document.getElementById("inspectionHistoryBody");
+
+    historyBody.innerHTML = `
+        <tr>
+            <td colspan="7" style="padding: 18px; color: #9ca3af;">
+                Loading inspection history...
+            </td>
+        </tr>
+    `;
+
+    try {
+        const response = await fetch(`${API_BASE}/inspections`);
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+            throw new Error("Could not load inspection history.");
+        }
+
+        historyBody.innerHTML = "";
+
+        if (data.inspections.length === 0) {
+            historyBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding: 18px; color: #9ca3af;">
+                        No inspections have been stored yet.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        data.inspections.forEach((inspection) => {
+            const row = document.createElement("tr");
+            row.style.borderBottom = "1px solid #1f2937";
+
+            const priorityClass =
+                `priority-${inspection.priority.toLowerCase()}`;
+
+            row.innerHTML = `
+                <td style="padding: 12px;">${inspection.id}</td>
+                <td style="padding: 12px;">
+                    <strong>${inspection.bridge_name}</strong>
+                    <div style="color: #9ca3af; margin-top: 4px;">
+                        ${inspection.bridge_id}
+                    </div>
+                </td>
+                <td style="padding: 12px;">${inspection.location}</td>
+                <td style="padding: 12px;">${inspection.defect_count}</td>
+                <td style="padding: 12px;">
+                    ${inspection.average_confidence}%
+                </td>
+                <td style="padding: 12px;">
+                    <strong class="${priorityClass}">
+                        ${inspection.priority}
+                    </strong>
+                </td>
+                <td style="padding: 12px;">
+                    ${inspection.inspection_time}
+                </td>
+            `;
+
+            historyBody.appendChild(row);
+        });
+
+    } catch (error) {
+        historyBody.innerHTML = `
+            <tr>
+                <td colspan="7" style="padding: 18px; color: #ff6b6b;">
+                    Error: ${error.message}
+                </td>
+            </tr>
+        `;
+    }
+}
 
     function downloadReport() {
         window.open(`${API_BASE}/generate-report`, "_blank");
