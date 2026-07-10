@@ -5,591 +5,661 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANTAHDRISHTI</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
+        :root{
+            --navy:#16324a;
+            --navy-2:#0f2435;
+            --ink:#15202b;
+            --muted:#687786;
+            --line:#dbe3ea;
+            --surface:#ffffff;
+            --soft:#f4f7f9;
+            --green:#2f7d32;
+            --amber:#b7791f;
+            --orange:#c05621;
+            --red:#b42318;
+            --shadow:0 10px 30px rgba(22,50,74,.08);
         }
 
-        body {
-            background: #0b0f14;
-            color: white;
-            min-height: 100vh;
+        *{box-sizing:border-box;margin:0;padding:0}
+
+        body{
+            min-height:100vh;
+            background:#eef3f6;
+            color:var(--ink);
+            font-family:"Inter",sans-serif;
         }
 
-        header {
-            padding: 24px 40px;
-            border-bottom: 1px solid #1f2937;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        header{
+            background:var(--surface);
+            border-bottom:1px solid var(--line);
         }
 
-        header h1 {
-            color: #9eff6e;
-            font-size: 28px;
+        .topbar{
+            width:min(94%,1280px);
+            margin:auto;
+            padding:20px 0;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:20px;
         }
 
-        header p {
-            color: #9ca3af;
-            font-size: 14px;
+        .brand h1{
+            font-family:"Manrope",sans-serif;
+            font-size:25px;
+            letter-spacing:.04em;
+            color:var(--navy);
         }
 
-        .container {
-            width: 92%;
-            max-width: 1200px;
-            margin: 35px auto;
+        .brand p{
+            margin-top:4px;
+            color:var(--muted);
+            font-size:13px;
         }
 
-        .hero {
-            margin-bottom: 30px;
+        .system-state{
+            padding:8px 12px;
+            border:1px solid #cfe0d1;
+            border-radius:999px;
+            background:#f2f8f3;
+            color:var(--green);
+            font-size:12px;
+            font-weight:700;
         }
 
-        .hero h2 {
-            font-size: 34px;
-            margin-bottom: 12px;
+        .container{
+            width:min(94%,1280px);
+            margin:28px auto 50px;
         }
 
-        .hero p {
-            color: #9ca3af;
-            max-width: 760px;
-            line-height: 1.6;
+        .intro{
+            padding:30px;
+            margin-bottom:20px;
+            background:linear-gradient(135deg,var(--navy),#254f6f);
+            border-radius:18px;
+            color:white;
+            box-shadow:var(--shadow);
         }
 
-        .card {
-            background: #111827;
-            border: 1px solid #1f2937;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
+        .intro small{
+            display:block;
+            margin-bottom:10px;
+            color:#cfe0ec;
+            font-weight:600;
         }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #d1d5db;
+        .intro h2{
+            max-width:780px;
+            font-family:"Manrope",sans-serif;
+            font-size:clamp(28px,4vw,44px);
+            line-height:1.12;
         }
 
-        input[type="file"] {
-            width: 100%;
-            padding: 16px;
-            background: #0f172a;
-            border: 1px dashed #4b5563;
-            border-radius: 10px;
-            color: white;
-            margin-bottom: 16px;
+        .intro p{
+            max-width:850px;
+            margin-top:14px;
+            color:#d8e6ef;
+            line-height:1.7;
         }
 
-        button {
-            background: #9eff6e;
-            color: #071008;
-            border: none;
-            padding: 14px 24px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 15px;
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(205px,1fr));
+            gap:16px;
         }
 
-        button:hover {
-            opacity: 0.9;
+        .card{
+            margin-bottom:20px;
+            padding:22px;
+            background:var(--surface);
+            border:1px solid var(--line);
+            border-radius:16px;
+            box-shadow:var(--shadow);
         }
 
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .metric-card{
+            min-height:120px;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
         }
 
-        .status {
-            margin-top: 16px;
-            color: #d1d5db;
+        .metric-label{
+            color:var(--muted);
+            font-size:13px;
+            font-weight:600;
         }
 
-        .results {
-            display: none;
+        .metric-value{
+            margin-top:8px;
+            font-family:"Manrope",sans-serif;
+            font-size:31px;
+            color:var(--navy);
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+        .section-head{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:14px;
+            margin-bottom:18px;
         }
 
-        .image-box img {
-            width: 100%;
-            border-radius: 12px;
-            border: 1px solid #374151;
-            margin-top: 12px;
+        .section-head h3{
+            font-family:"Manrope",sans-serif;
+            font-size:19px;
+            color:var(--navy);
         }
 
-        .metric {
-            background: #0f172a;
-            border: 1px solid #1f2937;
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 12px;
+        .section-head p{
+            margin-top:4px;
+            color:var(--muted);
+            font-size:13px;
         }
 
-        .metric span {
-            display: block;
-            color: #9ca3af;
-            font-size: 13px;
-            margin-bottom: 6px;
+        label{
+            display:block;
+            margin-bottom:7px;
+            color:#344353;
+            font-size:13px;
+            font-weight:600;
         }
 
-        .metric strong {
-            font-size: 22px;
+        input,select,textarea{
+            width:100%;
+            padding:12px 13px;
+            color:var(--ink);
+            background:white;
+            border:1px solid #cfd9e2;
+            border-radius:10px;
+            font:inherit;
+            outline:none;
         }
 
-        .defect-item {
-            background: #0f172a;
-            border: 1px solid #1f2937;
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 10px;
+        input:focus,select:focus,textarea:focus{
+            border-color:#4c7a9c;
+            box-shadow:0 0 0 3px rgba(76,122,156,.12);
         }
 
-        .priority-low {
-            color: #66ff99;
+        input[type=file]{
+            margin-bottom:14px;
+            background:var(--soft);
+            border-style:dashed;
         }
 
-        .priority-medium {
-            color: #ffd166;
+        textarea{
+            min-height:110px;
+            resize:vertical;
         }
 
-        .priority-high {
-            color: #ff8c42;
+        button{
+            padding:11px 17px;
+            background:var(--navy);
+            color:white;
+            border:none;
+            border-radius:10px;
+            font:inherit;
+            font-size:13px;
+            font-weight:700;
+            cursor:pointer;
         }
 
-        .priority-critical {
-            color: #ff4d4d;
+        button:hover{background:var(--navy-2)}
+        button:disabled{opacity:.5;cursor:not-allowed}
+
+        .secondary{background:#e8eef3;color:var(--navy)}
+        .secondary:hover{background:#dbe5ec}
+
+        .status{
+            margin-top:14px;
+            color:var(--muted);
+            font-size:13px;
         }
 
-        .report-button {
-            margin-top: 18px;
-            background: white;
-            color: black;
+        .results,.feedback-card{display:none}
+
+        .image-card img{
+            width:100%;
+            max-height:480px;
+            margin-top:12px;
+            object-fit:contain;
+            background:#f7fafb;
+            border:1px solid var(--line);
+            border-radius:11px;
         }
 
-        footer {
-            color: #6b7280;
-            font-size: 13px;
-            text-align: center;
-            padding: 30px;
+        .summary-item{
+            margin-bottom:10px;
+            padding:15px;
+            background:var(--soft);
+            border:1px solid #e4eaef;
+            border-radius:11px;
+        }
+
+        .summary-item span{
+            display:block;
+            margin-bottom:5px;
+            color:var(--muted);
+            font-size:12px;
+            font-weight:600;
+        }
+
+        .summary-item strong{font-size:18px}
+
+        .health-track{
+            height:9px;
+            margin-top:9px;
+            background:#dfe7ed;
+            border-radius:999px;
+            overflow:hidden;
+        }
+
+        .health-fill{
+            width:0;
+            height:100%;
+            background:linear-gradient(90deg,#b42318,#d97706,#2f7d32);
+            border-radius:999px;
+            transition:width .5s ease;
+        }
+
+        .defect{
+            margin-bottom:9px;
+            padding:13px;
+            background:var(--soft);
+            border:1px solid #e4eaef;
+            border-radius:10px;
+        }
+
+        .low{color:var(--green)}
+        .medium{color:var(--amber)}
+        .high{color:var(--orange)}
+        .critical{color:var(--red)}
+
+        .badge{
+            display:inline-block;
+            padding:5px 8px;
+            border-radius:999px;
+            font-size:11px;
+            font-weight:700;
+        }
+
+        .reviewed{
+            background:#edf7ee;
+            color:var(--green);
+            border:1px solid #cfe2d1;
+        }
+
+        .pending{
+            background:#fff8e8;
+            color:var(--amber);
+            border:1px solid #f1dfb0;
+        }
+
+        .table-wrap{overflow-x:auto}
+
+        table{
+            width:100%;
+            min-width:920px;
+            border-collapse:collapse;
+        }
+
+        th{
+            padding:11px;
+            color:var(--muted);
+            font-size:12px;
+            text-align:left;
+            border-bottom:1px solid var(--line);
+        }
+
+        td{
+            padding:12px 11px;
+            font-size:13px;
+            border-bottom:1px solid #edf1f4;
+            vertical-align:top;
+        }
+
+        tbody tr:hover{background:#f8fafb}
+
+        .muted{color:var(--muted)}
+
+        .chart-box{
+            height:330px;
+            padding:12px;
+            background:#fbfcfd;
+            border:1px solid var(--line);
+            border-radius:11px;
+        }
+
+        .trend-row{
+            display:flex;
+            gap:10px;
+            margin-bottom:14px;
+        }
+
+        .trend-row input{max-width:280px}
+
+        .feedback-grid{
+            display:grid;
+            grid-template-columns:repeat(2,minmax(0,1fr));
+            gap:15px;
+        }
+
+        .feedback-grid .full{grid-column:1/-1}
+
+        footer{
+            padding:24px;
+            color:#758493;
+            font-size:12px;
+            text-align:center;
+        }
+
+        @media(max-width:760px){
+            .topbar,.section-head,.trend-row{
+                align-items:flex-start;
+                flex-direction:column;
+            }
+            .feedback-grid{grid-template-columns:1fr}
+            .feedback-grid .full{grid-column:auto}
+            .system-state{display:none}
         }
     </style>
 </head>
-
 <body>
-
 <header>
-    <div>
-        <h1>ANTAHDRISHTI</h1>
-        <p>AI-Powered Infrastructure Health Intelligence</p>
+    <div class="topbar">
+        <div class="brand">
+            <h1>ANTAHDRISHTI</h1>
+            <p>Infrastructure Inspection & Maintenance Intelligence</p>
+        </div>
+        <div class="system-state">SYSTEM OPERATIONAL</div>
     </div>
 </header>
 
 <div class="container">
-
-    <section class="hero">
-        <h2>Bridge Defect Inspection</h2>
+    <section class="intro">
+        <small>AI-ASSISTED • ENGINEER-VERIFIED</small>
+        <h2>Digital inspection intelligence for RCC bridges.</h2>
         <p>
-            Upload a bridge image to detect visible defects using a custom-trained YOLO model.
-            The result provides AI-assisted maintenance priority and must be verified by a qualified engineer.
+            Detect visible structural defects, maintain bridge-wise inspection records,
+            track health trends, generate reports, and preserve engineer verification
+            as the final authority.
         </p>
     </section>
 
+    <section class="grid">
+        <div class="card metric-card"><span class="metric-label">Total Bridges</span><strong class="metric-value" id="totalBridges">0</strong></div>
+        <div class="card metric-card"><span class="metric-label">Total Inspections</span><strong class="metric-value" id="totalInspections">0</strong></div>
+        <div class="card metric-card"><span class="metric-label">Reviewed</span><strong class="metric-value low" id="reviewedInspections">0</strong></div>
+        <div class="card metric-card"><span class="metric-label">Pending Review</span><strong class="metric-value medium" id="pendingReview">0</strong></div>
+        <div class="card metric-card"><span class="metric-label">Critical Inspections</span><strong class="metric-value critical" id="criticalInspections">0</strong></div>
+        <div class="card metric-card"><span class="metric-label">Total Defects</span><strong class="metric-value" id="totalDefects">0</strong></div>
+    </section>
+
     <section class="card">
+        <div class="section-head">
+            <div><h3>Bridge Status Overview</h3><p>Latest recorded state of each bridge.</p></div>
+            <button onclick="loadBridgeStatus()">Refresh</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Bridge ID</th><th>Bridge Name</th><th>Location</th><th>Health</th><th>Defects</th><th>Priority</th><th>Review</th><th>Last Inspection</th></tr></thead>
+                <tbody id="bridgeStatusBody"><tr><td colspan="8" class="muted">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </section>
 
-        <div class="grid" style="margin-bottom: 18px;">
+    <section class="card">
+        <div class="section-head">
+            <div><h3>Bridge Health Trend</h3><p>Historical health-score movement for a selected bridge.</p></div>
+            <button onclick="loadHealthTrend()">Refresh Trend</button>
+        </div>
+        <div class="trend-row">
+            <input id="trendBridgeId" type="text" value="BRG-001" placeholder="Enter Bridge ID">
+        </div>
+        <div class="chart-box"><canvas id="trendCanvas"></canvas></div>
+    </section>
 
-    <div>
-        <label for="bridgeId">Bridge ID</label>
-        <input
-            type="text"
-            id="bridgeId"
-            placeholder="Example: BRG-101"
-            value="BRG-001"
-            style="
-                width: 100%;
-                padding: 13px;
-                border-radius: 10px;
-                border: 1px solid #374151;
-                background: #0f172a;
-                color: white;
-            "
-        >
-    </div>
+    <section class="card">
+        <div class="section-head">
+            <div><h3>New Inspection</h3><p>Register the asset and upload one close-up bridge image.</p></div>
+        </div>
 
-    <div>
-        <label for="bridgeName">Bridge Name</label>
-        <input
-            type="text"
-            id="bridgeName"
-            placeholder="Example: PVNR Flyover"
-            value="Demo RCC Bridge"
-            style="
-                width: 100%;
-                padding: 13px;
-                border-radius: 10px;
-                border: 1px solid #374151;
-                background: #0f172a;
-                color: white;
-            "
-        >
-    </div>
+        <div class="grid" style="margin-bottom:16px">
+            <div><label>Bridge ID</label><input id="bridgeId" value="BRG-001"></div>
+            <div><label>Bridge Name</label><input id="bridgeName" value="Demo RCC Bridge"></div>
+            <div><label>Location</label><input id="location" value="Hyderabad"></div>
+            <div><label>Engineer Name</label><input id="engineerName" value="Ram Charan Sai"></div>
+        </div>
 
-    <div>
-        <label for="location">Location</label>
-        <input
-            type="text"
-            id="location"
-            placeholder="Example: Hyderabad"
-            value="Hyderabad"
-            style="
-                width: 100%;
-                padding: 13px;
-                border-radius: 10px;
-                border: 1px solid #374151;
-                background: #0f172a;
-                color: white;
-            "
-        >
-    </div>
-
-    <div>
-        <label for="engineerName">Engineer Name</label>
-        <input
-            type="text"
-            id="engineerName"
-            placeholder="Example: Ram Charan Sai"
-            value="Ram Charan Sai"
-            style="
-                width: 100%;
-                padding: 13px;
-                border-radius: 10px;
-                border: 1px solid #374151;
-                background: #0f172a;
-                color: white;
-            "
-        >
-    </div>
-
-</div>
-        <label for="imageInput">Upload bridge image</label>
-        <input type="file" id="imageInput" accept="image/*">
-
-        <button id="analyzeButton" onclick="analyzeImage()">
-            Analyze Image
-        </button>
-
+        <label>Upload Bridge Image</label>
+        <input id="imageInput" type="file" accept="image/*">
+        <button id="analyzeButton" onclick="analyzeImage()">Run Inspection</button>
         <div class="status" id="statusText"></div>
     </section>
 
     <section class="results" id="resultsSection">
-
         <div class="grid">
-
-            <div class="card image-box">
-                <h3>Original Image</h3>
-                <img id="originalImage" alt="Original uploaded image">
-            </div>
-
-            <div class="card image-box">
-                <h3>AI Detection Result</h3>
-                <img id="resultImage" alt="YOLO detection result">
-            </div>
-
+            <div class="card image-card"><h3>Original Image</h3><img id="originalImage"></div>
+            <div class="card image-card"><h3>AI Detection Result</h3><img id="resultImage"></div>
         </div>
 
         <div class="grid">
-
             <div class="card">
-                <h3 style="margin-bottom: 18px;">Inspection Summary</h3>
-
-                <div class="metric">
-                    <span>Defect Count</span>
-                    <strong id="defectCount">0</strong>
-                </div>
-
-                <div class="metric">
-                    <span>Average Confidence</span>
-                    <strong id="averageConfidence">0%</strong>
-                </div>
-<div class="metric">
-    <span>Infrastructure Health Score</span>
-    <strong id="healthScore">100 / 100</strong>
-</div>
-                <div class="metric">
-                    <span>Preliminary Priority</span>
-                    <strong id="priorityText">UNKNOWN</strong>
-                </div>
-
-                <div class="metric">
-                    <span>Recommendation</span>
-                    <strong id="recommendationText" style="font-size: 16px;"></strong>
-                </div>
-
-                <button class="report-button" onclick="downloadReport()">
-                    Generate PDF Report
-                </button>
+                <div class="section-head"><div><h3>Inspection Summary</h3></div></div>
+                <div class="summary-item"><span>Inspection ID</span><strong id="inspectionIdText">—</strong></div>
+                <div class="summary-item"><span>Defect Count</span><strong id="defectCount">0</strong></div>
+                <div class="summary-item"><span>Average Confidence</span><strong id="averageConfidence">0%</strong></div>
+                <div class="summary-item"><span>Health Score</span><strong id="healthScore">100 / 100</strong><div class="health-track"><div class="health-fill" id="healthFill"></div></div></div>
+                <div class="summary-item"><span>Preliminary Priority</span><strong id="priorityText">UNKNOWN</strong></div>
+                <div class="summary-item"><span>Recommendation</span><strong id="recommendationText" style="font-size:14px;line-height:1.5"></strong></div>
+                <button class="secondary" onclick="downloadReport()">Generate PDF Report</button>
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 18px;">Detected Defects</h3>
+                <div class="section-head"><div><h3>Detected Defects</h3></div></div>
                 <div id="defectsList"></div>
             </div>
-
         </div>
-
     </section>
 
-</div>
-<section class="card" style="margin-top: 24px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px;">
-        <div>
-            <h3>Inspection History</h3>
-            <p style="color: #9ca3af; margin-top: 6px;">
-                Previous inspections stored in the local database.
-            </p>
+    <section class="card feedback-card" id="feedbackCard">
+        <div class="section-head">
+            <div><h3>Engineer Verification</h3><p>Confirm, correct, or reject the AI assessment.</p></div>
+            <span id="feedbackBadge" class="badge pending">Pending Review</span>
         </div>
 
-        <button onclick="loadInspections()">
-            Refresh History
-        </button>
-    </div>
+        <div class="feedback-grid">
+            <div><label>Inspection ID</label><input id="feedbackInspectionId" readonly></div>
+            <div>
+                <label>Decision</label>
+                <select id="engineerDecision">
+                    <option value="ACCEPTED">Accept AI Result</option>
+                    <option value="NEEDS_CORRECTION">Needs Correction</option>
+                    <option value="REJECTED">Reject AI Result</option>
+                </select>
+            </div>
+            <div>
+                <label>Corrected Defect</label>
+                <select id="correctedDefect">
+                    <option value="">No correction</option>
+                    <option>Crack</option><option>Corrosion</option><option>Spalling</option>
+                    <option value="Exposed_Rebar">Exposed Rebar</option>
+                    <option>No visible defect</option>
+                </select>
+            </div>
+            <div>
+                <label>Final Priority</label>
+                <select id="finalPriority">
+                    <option value="">Use AI Priority</option>
+                    <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
+                </select>
+            </div>
+            <div class="full"><label>Engineer Remarks</label><textarea id="engineerRemarks" placeholder="Enter validation notes, site observations, or recommended action."></textarea></div>
+            <div class="full"><button id="saveFeedbackButton" onclick="submitFeedback()">Save Engineer Verification</button><div class="status" id="feedbackMessage"></div></div>
+        </div>
+    </section>
 
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="text-align: left; color: #9ca3af; border-bottom: 1px solid #374151;">
-                    <th style="padding: 12px;">ID</th>
-                    <th style="padding: 12px;">Bridge</th>
-                    <th style="padding: 12px;">Location</th>
-                    <th style="padding: 12px;">Defects</th>
-                    <th style="padding: 12px;">Confidence</th>
-                    <th style="padding: 12px;">Priority</th>
-                    <th style="padding: 12px;">Inspection Time</th>
-                </tr>
-            </thead>
+    <section class="card">
+        <div class="section-head">
+            <div><h3>Inspection History</h3><p>AI inspections with engineer-review status.</p></div>
+            <button onclick="loadInspections()">Refresh</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>ID</th><th>Bridge</th><th>Location</th><th>Health</th><th>Defects</th><th>Confidence</th><th>Priority</th><th>Review</th><th>Inspection Time</th></tr></thead>
+                <tbody id="inspectionHistoryBody"><tr><td colspan="9" class="muted">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </section>
+</div>
 
-            <tbody id="inspectionHistoryBody">
-                <tr>
-                    <td colspan="7" style="padding: 18px; color: #9ca3af;">
-                        Click “Refresh History” to load saved inspections.
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-<footer>
-    AI-assisted visual prioritization only. Final assessment must be performed by a qualified engineer.
-</footer>
+<footer>ANTAHDRISHTI • AI-assisted visual prioritization only • Final assessment by a qualified engineer</footer>
 
 <script>
-    const API_BASE = window.location.origin;
+const API_BASE=window.location.origin;
+let healthChart=null;
+let currentInspectionId=null;
 
-    async function analyzeImage() {
-        const imageInput = document.getElementById("imageInput");
-        const analyzeButton = document.getElementById("analyzeButton");
-        const statusText = document.getElementById("statusText");
+function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function pClass(p){return String(p||"").toLowerCase()}
+function reviewBadge(v){return v?'<span class="badge reviewed">Reviewed</span>':'<span class="badge pending">Pending</span>'}
 
-        if (!imageInput.files.length) {
-            statusText.textContent = "Please choose an image first.";
-            return;
-        }
-
-        const file = imageInput.files[0];
-
-        document.getElementById("originalImage").src =
-            URL.createObjectURL(file);
-
-        const formData = new FormData();
-
-formData.append("file", file);
-
-formData.append(
-    "bridge_id",
-    document.getElementById("bridgeId").value
-);
-
-formData.append(
-    "bridge_name",
-    document.getElementById("bridgeName").value
-);
-
-formData.append(
-    "location",
-    document.getElementById("location").value
-);
-
-formData.append(
-    "engineer_name",
-    document.getElementById("engineerName").value
-);
-
-analyzeButton.disabled = true;
-        statusText.textContent = "Running AI inspection...";
-
-        try {
-            const response = await fetch(`${API_BASE}/analyze`, {
-                method: "POST",
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || data.status !== "success") {
-                throw new Error(data.message || "Analysis failed");
-            }
-
-            document.getElementById("resultsSection").style.display = "block";
-
-            document.getElementById("resultImage").src =
-                `${API_BASE}${data.result_image_url}`;
-
-            document.getElementById("defectCount").textContent =
-                data.defect_count;
-
-            document.getElementById("averageConfidence").textContent =
-                `${data.average_confidence}%`;
-                document.getElementById("healthScore").textContent =
-    `${data.health_score} / 100`;
-
-            const priorityElement =
-                document.getElementById("priorityText");
-
-            priorityElement.textContent =
-                data.preliminary_priority;
-
-            priorityElement.className = "";
-
-            const priorityClass =
-                `priority-${data.preliminary_priority.toLowerCase()}`;
-
-            priorityElement.classList.add(priorityClass);
-
-            document.getElementById("recommendationText").textContent =
-                data.recommendation;
-
-            const defectsList =
-                document.getElementById("defectsList");
-
-            defectsList.innerHTML = "";
-
-            if (data.detections.length === 0) {
-                defectsList.innerHTML =
-                    '<div class="defect-item">No visible defects detected.</div>';
-            } else {
-                data.detections.forEach((detection) => {
-                    const item = document.createElement("div");
-                    item.className = "defect-item";
-
-                    item.innerHTML = `
-                        <strong>${detection.defect}</strong>
-                        <div style="margin-top: 6px; color: #9ca3af;">
-                            Confidence: ${detection.confidence}%
-                        </div>
-                    `;
-
-                    defectsList.appendChild(item);
-                });
-            }
-
-            statusText.textContent =
-                "Inspection completed successfully.";
-
-        } catch (error) {
-            statusText.textContent =
-                `Error: ${error.message}`;
-        } finally {
-            analyzeButton.disabled = false;
-        }
-    }
-
-    async function loadInspections() {
-    const historyBody = document.getElementById("inspectionHistoryBody");
-
-    historyBody.innerHTML = `
-        <tr>
-            <td colspan="7" style="padding: 18px; color: #9ca3af;">
-                Loading inspection history...
-            </td>
-        </tr>
-    `;
-
-    try {
-        const response = await fetch(`${API_BASE}/inspections`);
-        const data = await response.json();
-
-        if (!response.ok || data.status !== "success") {
-            throw new Error("Could not load inspection history.");
-        }
-
-        historyBody.innerHTML = "";
-
-        if (data.inspections.length === 0) {
-            historyBody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="padding: 18px; color: #9ca3af;">
-                        No inspections have been stored yet.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        data.inspections.forEach((inspection) => {
-            const row = document.createElement("tr");
-            row.style.borderBottom = "1px solid #1f2937";
-
-            const priorityClass =
-                `priority-${inspection.priority.toLowerCase()}`;
-
-            row.innerHTML = `
-                <td style="padding: 12px;">${inspection.id}</td>
-                <td style="padding: 12px;">
-                    <strong>${inspection.bridge_name}</strong>
-                    <div style="color: #9ca3af; margin-top: 4px;">
-                        ${inspection.bridge_id}
-                    </div>
-                </td>
-                <td style="padding: 12px;">${inspection.location}</td>
-                <td style="padding: 12px;">${inspection.defect_count}</td>
-                <td style="padding: 12px;">
-                    ${inspection.average_confidence}%
-                </td>
-                <td style="padding: 12px;">
-                    <strong class="${priorityClass}">
-                        ${inspection.priority}
-                    </strong>
-                </td>
-                <td style="padding: 12px;">
-                    ${inspection.inspection_time}
-                </td>
-            `;
-
-            historyBody.appendChild(row);
-        });
-
-    } catch (error) {
-        historyBody.innerHTML = `
-            <tr>
-                <td colspan="7" style="padding: 18px; color: #ff6b6b;">
-                    Error: ${error.message}
-                </td>
-            </tr>
-        `;
-    }
+async function inspections(){
+    const r=await fetch(`${API_BASE}/inspections`);
+    const d=await r.json();
+    if(!r.ok||d.status!=="success") throw new Error("Could not load inspection data.");
+    return d.inspections;
 }
 
-    function downloadReport() {
-        window.open(`${API_BASE}/generate-report`, "_blank");
-    }
-</script>
+async function analyzeImage(){
+    const f=document.getElementById("imageInput").files[0];
+    const status=document.getElementById("statusText");
+    if(!f){status.textContent="Please choose an image first.";return}
 
+    const vals=["bridgeId","bridgeName","location","engineerName"].map(id=>document.getElementById(id).value.trim());
+    if(vals.some(v=>!v)){status.textContent="Please complete all bridge and engineer details.";return}
+
+    const fd=new FormData();
+    fd.append("file",f);
+    fd.append("bridge_id",vals[0]);
+    fd.append("bridge_name",vals[1]);
+    fd.append("location",vals[2]);
+    fd.append("engineer_name",vals[3]);
+
+    const b=document.getElementById("analyzeButton");
+    b.disabled=true;status.textContent="Running AI inspection...";
+
+    try{
+        const r=await fetch(`${API_BASE}/analyze`,{method:"POST",body:fd});
+        const d=await r.json();
+        if(!r.ok||d.status!=="success") throw new Error(d.message||"Analysis failed.");
+
+        currentInspectionId=d.inspection_id;
+        document.getElementById("resultsSection").style.display="block";
+        document.getElementById("feedbackCard").style.display="block";
+        document.getElementById("originalImage").src=URL.createObjectURL(f);
+        document.getElementById("resultImage").src=`${API_BASE}${d.result_image_url}?t=${Date.now()}`;
+        document.getElementById("inspectionIdText").textContent=d.inspection_id;
+        document.getElementById("feedbackInspectionId").value=d.inspection_id;
+        document.getElementById("defectCount").textContent=d.defect_count;
+        document.getElementById("averageConfidence").textContent=`${d.average_confidence}%`;
+        document.getElementById("healthScore").textContent=`${d.health_score} / 100`;
+        document.getElementById("healthFill").style.width=`${d.health_score}%`;
+        const p=document.getElementById("priorityText");p.textContent=d.preliminary_priority;p.className=pClass(d.preliminary_priority);
+        document.getElementById("recommendationText").textContent=d.recommendation;
+
+        const list=document.getElementById("defectsList");list.innerHTML="";
+        if(!d.detections.length){list.innerHTML='<div class="defect">No visible defects detected.</div>'}
+        else d.detections.forEach(x=>{const el=document.createElement("div");el.className="defect";el.innerHTML=`<strong>${esc(x.defect)}</strong><div class="muted" style="margin-top:5px">Confidence: ${x.confidence}%</div>`;list.appendChild(el)});
+
+        document.getElementById("feedbackBadge").className="badge pending";
+        document.getElementById("feedbackBadge").textContent="Pending Review";
+        document.getElementById("trendBridgeId").value=vals[0];
+        status.textContent="Inspection completed successfully.";
+
+        await Promise.all([loadDashboard(),loadInspections(),loadBridgeStatus(),loadHealthTrend()]);
+        document.getElementById("resultsSection").scrollIntoView({behavior:"smooth"});
+    }catch(e){status.textContent=`Error: ${e.message}`}
+    finally{b.disabled=false}
+}
+
+async function submitFeedback(){
+    const msg=document.getElementById("feedbackMessage");
+    if(!currentInspectionId){msg.textContent="Run an inspection first.";return}
+
+    const fd=new FormData();
+    fd.append("inspection_id",currentInspectionId);
+    fd.append("engineer_decision",document.getElementById("engineerDecision").value);
+    fd.append("corrected_defect",document.getElementById("correctedDefect").value);
+    fd.append("final_priority",document.getElementById("finalPriority").value);
+    fd.append("engineer_remarks",document.getElementById("engineerRemarks").value.trim());
+
+    const b=document.getElementById("saveFeedbackButton");b.disabled=true;msg.textContent="Saving verification...";
+    try{
+        const r=await fetch(`${API_BASE}/submit-feedback`,{method:"POST",body:fd});
+        const d=await r.json();
+        if(!r.ok||d.status!=="success") throw new Error(d.message||"Could not save feedback.");
+        msg.textContent="Engineer verification saved. Generate the PDF now to include it.";
+        document.getElementById("feedbackBadge").className="badge reviewed";
+        document.getElementById("feedbackBadge").textContent="Reviewed";
+        await Promise.all([loadDashboard(),loadInspections(),loadBridgeStatus()]);
+    }catch(e){msg.textContent=`Error: ${e.message}`}
+    finally{b.disabled=false}
+}
+
+async function loadDashboard(){
+    try{
+        const r=await fetch(`${API_BASE}/dashboard-summary`);const d=await r.json();
+        document.getElementById("totalBridges").textContent=d.unique_bridges;
+        document.getElementById("totalInspections").textContent=d.total_inspections;
+        document.getElementById("reviewedInspections").textContent=d.reviewed_inspections;
+        document.getElementById("pendingReview").textContent=d.pending_review;
+        document.getElementById("criticalInspections").textContent=d.priority_counts.CRITICAL;
+        document.getElementById("totalDefects").textContent=d.total_defects;
+    }catch(e){console.error(e)}
+}
+
+async function loadInspections(){
+    const body=document.getElementById("inspectionHistoryBody");
+    try{
+        const data=await inspections();body.innerHTML="";
+        if(!data.length){body.innerHTML='<tr><td colspan="9" class="muted">No inspections found.</td></tr>';return}
+        data.forEach(x=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${x.id}</td><td><strong>${esc(x.bridge_name)}</strong><div class="muted">${esc(x.bridge_id)}</div></td><td>${esc(x.location)}</td><td>${x.health_score??"-"}</td><td>${x.defect_count}</td><td>${x.average_confidence}%</td><td><strong class="${pClass(x.priority)}">${esc(x.priority)}</strong></td><td>${reviewBadge(Boolean(x.has_feedback))}</td><td>${esc(x.inspection_time)}</td>`;body.appendChild(tr)})
+    }catch(e){body.innerHTML=`<tr><td colspan="9">${esc(e.message)}</td></tr>`}
+}
+
+async function loadBridgeStatus(){
+    const body=document.getElementById("bridgeStatusBody");
+    try{
+        const data=await inspections();const latest=new Map();
+        data.forEach(x=>{if(!latest.has(x.bridge_id))latest.set(x.bridge_id,x)});
+        body.innerHTML="";
+        latest.forEach(x=>{const tr=document.createElement("tr");tr.style.cursor="pointer";tr.onclick=async()=>{document.getElementById("trendBridgeId").value=x.bridge_id;await loadHealthTrend()};tr.innerHTML=`<td><strong>${esc(x.bridge_id)}</strong></td><td>${esc(x.bridge_name)}</td><td>${esc(x.location)}</td><td>${x.health_score??"-"}</td><td>${x.defect_count}</td><td><strong class="${pClass(x.priority)}">${esc(x.priority)}</strong></td><td>${reviewBadge(Boolean(x.has_feedback))}</td><td>${esc(x.inspection_time)}</td>`;body.appendChild(tr)})
+    }catch(e){body.innerHTML=`<tr><td colspan="8">${esc(e.message)}</td></tr>`}
+}
+
+async function loadHealthTrend(){
+    const id=document.getElementById("trendBridgeId").value.trim();if(!id)return;
+    try{
+        const r=await fetch(`${API_BASE}/health-history/${encodeURIComponent(id)}`);const d=await r.json();
+        if(healthChart)healthChart.destroy();
+        healthChart=new Chart(document.getElementById("trendCanvas"),{
+            type:"line",
+            data:{labels:d.history.map((x,i)=>x.inspection_time||`Inspection ${i+1}`),datasets:[{label:`Health Score — ${id}`,data:d.history.map(x=>Number(x.health_score)),borderColor:"#16324a",backgroundColor:"rgba(22,50,74,.10)",pointBackgroundColor:"#16324a",borderWidth:3,tension:.3,fill:true}]},
+            options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100}}}
+        })
+    }catch(e){console.error(e)}
+}
+
+function downloadReport(){window.open(`${API_BASE}/generate-report`,"_blank")}
+
+window.addEventListener("DOMContentLoaded",()=>Promise.all([loadDashboard(),loadInspections(),loadBridgeStatus(),loadHealthTrend()]));
+</script>
 </body>
 </html>
