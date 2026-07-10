@@ -23,3 +23,7 @@ datasets/
 # System files
 Thumbs.db
 .DS_Store
+ANTAHDRISHTI_BACKEND/uploads/
+ANTAHDRISHTI_BACKEND/results/
+ANTAHDRISHTI_BACKEND/reports/
+ANTAHDRISHTI_BACKEND/__pycache__/

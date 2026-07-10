@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANTAHDRISHTI</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #0b0f14;
+            color: white;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 24px 40px;
+            border-bottom: 1px solid #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            color: #9eff6e;
+            font-size: 28px;
+        }
+
+        header p {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1200px;
+            margin: 35px auto;
+        }
+
+        .hero {
+            margin-bottom: 30px;
+        }
+
+        .hero h2 {
+            font-size: 34px;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            color: #9ca3af;
+            max-width: 760px;
+            line-height: 1.6;
+        }
+
+        .card {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d1d5db;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 16px;
+            background: #0f172a;
+            border: 1px dashed #4b5563;
+            border-radius: 10px;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        button {
+            background: #9eff6e;
+            color: #071008;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 16px;
+            color: #d1d5db;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .image-box img {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid #374151;
+            margin-top: 12px;
+        }
+
+        .metric {
+            background: #0f172a;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+        }
+
+        .metric span {
+            display: block;
+            color: #9ca3af;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .metric strong {
+            font-size: 22px;
+        }
+
+        .defect-item {
+            background: #0f172a;
+            border: 1px solid #1f2937;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .priority-low {
+            color: #66ff99;
+        }
+
+        .priority-medium {
+            color: #ffd166;
+        }
+
+        .priority-high {
+            color: #ff8c42;
+        }
+
+        .priority-critical {
+            color: #ff4d4d;
+        }
+
+        .report-button {
+            margin-top: 18px;
+            background: white;
+            color: black;
+        }
+
+        footer {
+            color: #6b7280;
+            font-size: 13px;
+            text-align: center;
+            padding: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>ANTAHDRISHTI</h1>
+        <p>AI-Powered Infrastructure Health Intelligence</p>
+    </div>
+</header>
+
+<div class="container">
+
+    <section class="hero">
+        <h2>Bridge Defect Inspection</h2>
+        <p>
+            Upload a bridge image to detect visible defects using a custom-trained YOLO model.
+            The result provides AI-assisted maintenance priority and must be verified by a qualified engineer.
+        </p>
+    </section>
+
+    <section class="card">
+        <label for="imageInput">Upload bridge image</label>
+        <input type="file" id="imageInput" accept="image/*">
+
+        <button id="analyzeButton" onclick="analyzeImage()">
+            Analyze Image
+        </button>
+
+        <div class="status" id="statusText"></div>
+    </section>
+
+    <section class="results" id="resultsSection">
+
+        <div class="grid">
+
+            <div class="card image-box">
+                <h3>Original Image</h3>
+                <img id="originalImage" alt="Original uploaded image">
+            </div>
+
+            <div class="card image-box">
+                <h3>AI Detection Result</h3>
+                <img id="resultImage" alt="YOLO detection result">
+            </div>
+
+        </div>
+
+        <div class="grid">
+
+            <div class="card">
+                <h3 style="margin-bottom: 18px;">Inspection Summary</h3>
+
+                <div class="metric">
+                    <span>Defect Count</span>
+                    <strong id="defectCount">0</strong>
+                </div>
+
+                <div class="metric">
+                    <span>Average Confidence</span>
+                    <strong id="averageConfidence">0%</strong>
+                </div>
+
+                <div class="metric">
+                    <span>Preliminary Priority</span>
+                    <strong id="priorityText">UNKNOWN</strong>
+                </div>
+
+                <div class="metric">
+                    <span>Recommendation</span>
+                    <strong id="recommendationText" style="font-size: 16px;"></strong>
+                </div>
+
+                <button class="report-button" onclick="downloadReport()">
+                    Generate PDF Report
+                </button>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 18px;">Detected Defects</h3>
+                <div id="defectsList"></div>
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<footer>
+    AI-assisted visual prioritization only. Final assessment must be performed by a qualified engineer.
+</footer>
+
+<script>
+    const API_BASE = window.location.origin;
+
+    async function analyzeImage() {
+        const imageInput = document.getElementById("imageInput");
+        const analyzeButton = document.getElementById("analyzeButton");
+        const statusText = document.getElementById("statusText");
+
+        if (!imageInput.files.length) {
+            statusText.textContent = "Please choose an image first.";
+            return;
+        }
+
+        const file = imageInput.files[0];
+
+        document.getElementById("originalImage").src =
+            URL.createObjectURL(file);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        analyzeButton.disabled = true;
+        statusText.textContent = "Running AI inspection...";
+
+        try {
+            const response = await fetch(`${API_BASE}/analyze`, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || data.status !== "success") {
+                throw new Error(data.message || "Analysis failed");
+            }
+
+            document.getElementById("resultsSection").style.display = "block";
+
+            document.getElementById("resultImage").src =
+                `${API_BASE}${data.result_image_url}`;
+
+            document.getElementById("defectCount").textContent =
+                data.defect_count;
+
+            document.getElementById("averageConfidence").textContent =
+                `${data.average_confidence}%`;
+
+            const priorityElement =
+                document.getElementById("priorityText");
+
+            priorityElement.textContent =
+                data.preliminary_priority;
+
+            priorityElement.className = "";
+
+            const priorityClass =
+                `priority-${data.preliminary_priority.toLowerCase()}`;
+
+            priorityElement.classList.add(priorityClass);
+
+            document.getElementById("recommendationText").textContent =
+                data.recommendation;
+
+            const defectsList =
+                document.getElementById("defectsList");
+
+            defectsList.innerHTML = "";
+
+            if (data.detections.length === 0) {
+                defectsList.innerHTML =
+                    '<div class="defect-item">No visible defects detected.</div>';
+            } else {
+                data.detections.forEach((detection) => {
+                    const item = document.createElement("div");
+                    item.className = "defect-item";
+
+                    item.innerHTML = `
+                        <strong>${detection.defect}</strong>
+                        <div style="margin-top: 6px; color: #9ca3af;">
+                            Confidence: ${detection.confidence}%
+                        </div>
+                    `;
+
+                    defectsList.appendChild(item);
+                });
+            }
+
+            statusText.textContent =
+                "Inspection completed successfully.";
+
+        } catch (error) {
+            statusText.textContent =
+                `Error: ${error.message}`;
+        } finally {
+            analyzeButton.disabled = false;
+        }
+    }
+
+    function downloadReport() {
+        window.open(`${API_BASE}/generate-report`, "_blank");
+    }
+</script>
+
+</body>
+</html>
