@@ -408,7 +408,7 @@
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Bridge ID</th><th>Bridge Name</th><th>Location</th><th>Health</th><th>Defects</th><th>Priority</th><th>Review</th><th>Last Inspection</th></tr></thead>
+                <thead><tr><th>Bridge ID</th><th>Bridge Name</th><th>Location</th><th>Visual Priority Score</th><th>Defects</th><th>Priority</th><th>Review</th><th>Last Inspection</th></tr></thead>
                 <tbody id="bridgeStatusBody"><tr><td colspan="8" class="muted">Loading...</td></tr></tbody>
             </table>
         </div>
@@ -416,7 +416,7 @@
 
     <section class="card">
         <div class="section-head">
-            <div><h3>Bridge Health Trend</h3><p>Historical health-score movement for a selected bridge.</p></div>
+            <div><h3>Inspection Priority Trend</h3><p>Historical AI visual-priority score for a selected bridge.</p></div>
             <button onclick="loadHealthTrend()">Refresh Trend</button>
         </div>
         <div class="trend-row">
@@ -435,6 +435,34 @@
             <div><label>Bridge Name</label><input id="bridgeName" value="Demo RCC Bridge"></div>
             <div><label>Location</label><input id="location" value="Hyderabad"></div>
             <div><label>Engineer Name</label><input id="engineerName" value="Ram Charan Sai"></div>
+            <div>
+                <label>Bridge Element</label>
+                <select id="bridgeElement">
+                    <option value="Unknown">Unknown</option>
+                    <option value="Deck">Deck</option>
+                    <option value="Girder">Girder / Beam</option>
+                    <option value="Pier">Pier / Column</option>
+                    <option value="Bearing">Bearing</option>
+                    <option value="Abutment">Abutment</option>
+                    <option value="Joint">Joint</option>
+                    <option value="Parapet">Parapet</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label>Image Quality</label>
+                <select id="imageQuality">
+                    <option value="Good">Good</option>
+                    <option value="Poor">Poor / Unclear</option>
+                </select>
+            </div>
+            <div>
+                <label>Scale Reference Available</label>
+                <select id="scaleReference">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </select>
+            </div>
         </div>
 
         <label>Upload Bridge Image</label>
@@ -455,7 +483,7 @@
                 <div class="summary-item"><span>Inspection ID</span><strong id="inspectionIdText">—</strong></div>
                 <div class="summary-item"><span>Defect Count</span><strong id="defectCount">0</strong></div>
                 <div class="summary-item"><span>Average Confidence</span><strong id="averageConfidence">0%</strong></div>
-                <div class="summary-item"><span>Health Score</span><strong id="healthScore">100 / 100</strong><div class="health-track"><div class="health-fill" id="healthFill"></div></div></div>
+                <div class="summary-item"><span>AI Visual Inspection Priority Score</span><strong id="healthScore">100 / 100</strong><div class="health-track"><div class="health-fill" id="healthFill"></div></div></div>
                 <div class="summary-item"><span>Preliminary Priority</span><strong id="priorityText">UNKNOWN</strong></div>
                 <div class="summary-item"><span>Recommendation</span><strong id="recommendationText" style="font-size:14px;line-height:1.5"></strong></div>
                 <button class="secondary" onclick="downloadReport()">Generate PDF Report</button>
@@ -512,7 +540,7 @@
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>ID</th><th>Bridge</th><th>Location</th><th>Health</th><th>Defects</th><th>Confidence</th><th>Priority</th><th>Review</th><th>Inspection Time</th></tr></thead>
+                <thead><tr><th>ID</th><th>Bridge</th><th>Location</th><th>Visual Priority Score</th><th>Defects</th><th>Confidence</th><th>Priority</th><th>Review</th><th>Inspection Time</th></tr></thead>
                 <tbody id="inspectionHistoryBody"><tr><td colspan="9" class="muted">Loading...</td></tr></tbody>
             </table>
         </div>
@@ -551,6 +579,9 @@ async function analyzeImage(){
     fd.append("bridge_name",vals[1]);
     fd.append("location",vals[2]);
     fd.append("engineer_name",vals[3]);
+    fd.append("bridge_element",document.getElementById("bridgeElement").value);
+    fd.append("image_quality",document.getElementById("imageQuality").value);
+    fd.append("scale_reference_available",document.getElementById("scaleReference").value);
 
     const b=document.getElementById("analyzeButton");
     b.disabled=true;status.textContent="Running AI inspection...";
@@ -576,7 +607,20 @@ async function analyzeImage(){
 
         const list=document.getElementById("defectsList");list.innerHTML="";
         if(!d.detections.length){list.innerHTML='<div class="defect">No visible defects detected.</div>'}
-        else d.detections.forEach(x=>{const el=document.createElement("div");el.className="defect";el.innerHTML=`<strong>${esc(x.defect)}</strong><div class="muted" style="margin-top:5px">Confidence: ${x.confidence}%</div>`;list.appendChild(el)});
+        else d.detections.forEach(x=>{
+            const el=document.createElement("div");
+            el.className="defect";
+            const areaPercent=Number(x.area_ratio||0)*100;
+            el.innerHTML=`
+                <strong>${esc(x.defect)}</strong>
+                <div class="muted" style="margin-top:6px;line-height:1.7">
+                    Confidence: ${x.confidence}%<br>
+                    Image-relative extent: ${areaPercent.toFixed(2)}%<br>
+                    Severity points: ${x.severity_points ?? "—"}<br>
+                    Suggested visual condition: ${esc(x.suggested_condition_state || "Pending")}
+                </div>`;
+            list.appendChild(el);
+        });
 
         document.getElementById("feedbackBadge").className="badge pending";
         document.getElementById("feedbackBadge").textContent="Pending Review";
@@ -651,7 +695,7 @@ async function loadHealthTrend(){
         if(healthChart)healthChart.destroy();
         healthChart=new Chart(document.getElementById("trendCanvas"),{
             type:"line",
-            data:{labels:d.history.map((x,i)=>x.inspection_time||`Inspection ${i+1}`),datasets:[{label:`Health Score — ${id}`,data:d.history.map(x=>Number(x.health_score)),borderColor:"#16324a",backgroundColor:"rgba(22,50,74,.10)",pointBackgroundColor:"#16324a",borderWidth:3,tension:.3,fill:true}]},
+            data:{labels:d.history.map((x,i)=>x.inspection_time||`Inspection ${i+1}`),datasets:[{label:`Visual Priority Score — ${id}`,data:d.history.map(x=>Number(x.health_score)),borderColor:"#16324a",backgroundColor:"rgba(22,50,74,.10)",pointBackgroundColor:"#16324a",borderWidth:3,tension:.3,fill:true}]},
             options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100}}}
         })
     }catch(e){console.error(e)}

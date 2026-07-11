@@ -63,6 +63,10 @@ latest_analysis = {
     "bridge_name": "Not provided",
     "location": "Not provided",
     "engineer_name": "Not provided",
+    "bridge_element": "Unknown",
+    "image_quality": "Unknown",
+    "scale_reference_available": "No",
+    "total_risk": 0,
     "detections": [],
     "priority": "UNKNOWN",
     "recommendation": "Complete an inspection first.",
@@ -92,6 +96,236 @@ def model_info():
     }
 
 
+# -----------------------------------------------------------------------------
+# AI VISUAL INSPECTION PRIORITY ENGINE
+# -----------------------------------------------------------------------------
+
+DEFECT_BASE_SEVERITY = {
+    "crack": 18.0,
+    "corrosion": 24.0,
+    "spalling": 34.0,
+    "exposed_rebar": 48.0,
+    "exposed reinforcement": 48.0,
+    "exposed_reinforcement": 48.0,
+}
+
+ELEMENT_MULTIPLIER = {
+    "parapet": 0.70,
+    "deck": 0.90,
+    "joint": 1.00,
+    "other": 1.00,
+    "unknown": 1.00,
+    "bearing": 1.20,
+    "girder": 1.30,
+    "beam": 1.30,
+    "pier": 1.30,
+    "column": 1.30,
+    "abutment": 1.15,
+}
+
+CRITICAL_ELEMENTS = {"bearing", "girder", "beam", "pier", "column"}
+
+
+def normalise_label(value: str) -> str:
+    return str(value).strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def confidence_factor(confidence: float) -> float:
+    """
+    Confidence measures class reliability, not physical severity.
+    A low-confidence detection must never erase a visually large defect.
+    """
+    if confidence < 0.30:
+        return 0.60
+    if confidence < 0.50:
+        return 0.70
+    if confidence < 0.70:
+        return 0.80
+    if confidence < 0.85:
+        return 0.90
+    return 1.00
+
+
+def area_factor(area_ratio: float) -> float:
+    """Bounding-box coverage in the image; not a physical area measurement."""
+    if area_ratio < 0.02:
+        return 0.60
+    if area_ratio < 0.08:
+        return 0.80
+    if area_ratio < 0.20:
+        return 1.00
+    if area_ratio < 0.50:
+        return 1.20
+    return 1.50
+
+
+def condition_rank_from_severity(severity: float) -> int:
+    if severity < 15:
+        return 1
+    if severity < 30:
+        return 2
+    if severity < 50:
+        return 3
+    return 4
+
+
+def minimum_condition_rank(defect_key: str, area_ratio: float) -> int:
+    """Conservative visual floor so large visible defects cannot become CS1."""
+    rank = 1
+
+    if defect_key in {"spalling", "exposed_rebar", "exposed_reinforcement"}:
+        rank = max(rank, 2)
+
+    if defect_key in {"exposed_rebar", "exposed_reinforcement"}:
+        rank = max(rank, 3)
+
+    if area_ratio >= 0.20:
+        rank = max(rank, 2)
+
+    if area_ratio >= 0.50 and defect_key in {
+        "crack", "corrosion", "spalling", "exposed_rebar", "exposed_reinforcement"
+    }:
+        rank = max(rank, 3)
+
+    return rank
+
+
+def visual_condition_state(severity: float, defect_key: str, area_ratio: float) -> str:
+    rank = max(
+        condition_rank_from_severity(severity),
+        minimum_condition_rank(defect_key, area_ratio),
+    )
+    return {
+        1: "CS1 - GOOD",
+        2: "CS2 - FAIR",
+        3: "CS3 - POOR",
+        4: "CS4 - SEVERE",
+    }[rank]
+
+
+def iou(box_a: dict, box_b: dict) -> float:
+    x_left = max(box_a["x1"], box_b["x1"])
+    y_top = max(box_a["y1"], box_b["y1"])
+    x_right = min(box_a["x2"], box_b["x2"])
+    y_bottom = min(box_a["y2"], box_b["y2"])
+
+    if x_right <= x_left or y_bottom <= y_top:
+        return 0.0
+
+    intersection = (x_right - x_left) * (y_bottom - y_top)
+    area_a = max(0.0, box_a["x2"] - box_a["x1"]) * max(0.0, box_a["y2"] - box_a["y1"])
+    area_b = max(0.0, box_b["x2"] - box_b["x1"]) * max(0.0, box_b["y2"] - box_b["y1"])
+    union = area_a + area_b - intersection
+    return intersection / union if union > 0 else 0.0
+
+
+def remove_duplicate_detections(detections: list[dict], threshold: float = 0.60) -> list[dict]:
+    """Keep the strongest overlapping detection of the same class."""
+    ordered = sorted(detections, key=lambda item: item["confidence"], reverse=True)
+    kept = []
+
+    for candidate in ordered:
+        duplicate = any(
+            normalise_label(candidate["defect"]) == normalise_label(existing["defect"])
+            and iou(candidate["bounding_box"], existing["bounding_box"]) >= threshold
+            for existing in kept
+        )
+        if not duplicate:
+            kept.append(candidate)
+
+    return kept
+
+
+def calculate_visual_priority(detections: list[dict], bridge_element: str, image_quality: str):
+    element_key = normalise_label(bridge_element)
+    element_weight = ELEMENT_MULTIPLIER.get(element_key, 1.00)
+
+    scored = []
+    for detection in detections:
+        defect_key = normalise_label(detection["defect"])
+        base = DEFECT_BASE_SEVERITY.get(defect_key, 15.0)
+        conf_ratio = detection["confidence"] / 100.0
+        conf_weight = confidence_factor(conf_ratio)
+        extent_weight = area_factor(detection["area_ratio"])
+
+        severity = round(base * conf_weight * extent_weight * element_weight, 2)
+        detection["base_severity"] = base
+        detection["confidence_factor"] = conf_weight
+        detection["area_factor"] = extent_weight
+        detection["element_multiplier"] = element_weight
+        detection["severity_points"] = severity
+        detection["suggested_condition_state"] = visual_condition_state(
+            severity, defect_key, detection["area_ratio"]
+        )
+        detection["confidence_warning"] = conf_ratio < 0.50
+        scored.append(detection)
+
+    scored.sort(key=lambda item: item["severity_points"], reverse=True)
+    weights = [1.00, 0.50, 0.25]
+    total_risk = sum(
+        item["severity_points"] * weights[index]
+        for index, item in enumerate(scored[:3])
+    )
+    total_risk = round(min(100.0, total_risk), 2)
+    screening_score = round(max(0.0, 100.0 - total_risk))
+
+    if screening_score >= 80:
+        priority = "LOW"
+        recommendation = "Continue routine monitoring and retain this inspection for comparison."
+    elif screening_score >= 60:
+        priority = "MEDIUM"
+        recommendation = "Engineer review is recommended and the affected element should be monitored."
+    elif screening_score >= 30:
+        priority = "HIGH"
+        recommendation = "Prioritize a detailed engineering inspection of the affected element."
+    else:
+        priority = "CRITICAL"
+        recommendation = "Immediate professional assessment is recommended before maintenance decisions."
+
+    severe_labels = {"exposed_rebar", "exposed_reinforcement", "exposed_reinforcement_", "exposed reinforcement"}
+    has_exposed_rebar = any(normalise_label(item["defect"]) in severe_labels for item in scored)
+    has_severe_spalling = any(
+        normalise_label(item["defect"]) == "spalling" and item["severity_points"] >= 34
+        for item in scored
+    )
+
+    has_large_visible_defect = any(
+        item["area_ratio"] >= 0.50
+        and normalise_label(item["defect"]) in {
+            "crack", "corrosion", "spalling", "exposed_rebar", "exposed_reinforcement"
+        }
+        for item in scored
+    )
+    has_low_confidence_large_defect = any(
+        item["area_ratio"] >= 0.20 and item["confidence"] < 50
+        for item in scored
+    )
+
+    if element_key in CRITICAL_ELEMENTS and (has_exposed_rebar or has_severe_spalling):
+        if priority in {"LOW", "MEDIUM"}:
+            priority = "HIGH"
+            recommendation = "A critical structural element shows a significant visible defect. Prioritize detailed engineering inspection."
+
+    if has_large_visible_defect and priority in {"LOW", "MEDIUM"}:
+        priority = "HIGH"
+        recommendation = (
+            "A large visible defect region was detected. Prioritize engineer review; "
+            "the bounding-box coverage is image-relative and must be verified on site."
+        )
+
+    if has_low_confidence_large_defect:
+        recommendation = (
+            "A visually large defect region was detected with low AI confidence. "
+            "Do not treat this as a healthy result; capture a clearer image and obtain engineer verification."
+        )
+
+    if normalise_label(image_quality) == "poor":
+        priority = "MANUAL_REVIEW"
+        recommendation = "Image quality is insufficient for reliable AI screening. Capture a clearer image and perform manual review."
+
+    return scored, screening_score, total_risk, priority, recommendation
+
+
 @app.post("/analyze")
 async def analyze(
     file: UploadFile = File(...),
@@ -99,6 +333,9 @@ async def analyze(
     bridge_name: str = Form(...),
     location: str = Form(...),
     engineer_name: str = Form(...),
+    bridge_element: str = Form("Unknown"),
+    image_quality: str = Form("Good"),
+    scale_reference_available: str = Form("No"),
 ):
     global latest_analysis
 
@@ -106,6 +343,9 @@ async def analyze(
     bridge_name = bridge_name.strip()
     location = location.strip()
     engineer_name = engineer_name.strip()
+    bridge_element = bridge_element.strip() or "Unknown"
+    image_quality = image_quality.strip() or "Good"
+    scale_reference_available = scale_reference_available.strip() or "No"
 
     if not bridge_id:
         return {"status": "error", "message": "Bridge ID is required."}
@@ -137,6 +377,8 @@ async def analyze(
     )
 
     result = results[0]
+    image_height, image_width = result.orig_shape
+    image_area = max(1, image_width * image_height)
     detections = []
     total_confidence = 0.0
 
@@ -156,6 +398,12 @@ async def analyze(
                     "x2": round(coordinates[2], 2),
                     "y2": round(coordinates[3], 2),
                 },
+                "area_ratio": round(
+                    max(0.0, coordinates[2] - coordinates[0])
+                    * max(0.0, coordinates[3] - coordinates[1])
+                    / image_area,
+                    4,
+                ),
             })
             total_confidence += confidence
 
@@ -169,35 +417,14 @@ async def analyze(
             "message": "The detected result image could not be saved.",
         }
 
+    detections = remove_duplicate_detections(detections)
     defect_count = len(detections)
 
-    health_score = 100.0
-    deduction_map = {
-        "Crack": 15,
-        "Corrosion": 20,
-        "Spalling": 25,
-        "Exposed_Rebar": 30,
-    }
-
-    for detection in detections:
-        base_deduction = deduction_map.get(detection["defect"], 10)
-        confidence_ratio = detection["confidence"] / 100
-        health_score -= base_deduction * confidence_ratio
-
-    health_score = max(0, min(100, round(health_score)))
-
-    if health_score >= 90:
-        priority = "LOW"
-        recommendation = "Bridge appears visually healthy. Continue routine inspections."
-    elif health_score >= 70:
-        priority = "MEDIUM"
-        recommendation = "Engineer review is recommended during the next scheduled inspection."
-    elif health_score >= 50:
-        priority = "HIGH"
-        recommendation = "A detailed engineering inspection should be scheduled."
-    else:
-        priority = "CRITICAL"
-        recommendation = "Immediate engineering inspection and maintenance assessment are required."
+    detections, health_score, total_risk, priority, recommendation = calculate_visual_priority(
+        detections=detections,
+        bridge_element=bridge_element,
+        image_quality=image_quality,
+    )
 
     average_confidence = (
         round((total_confidence / defect_count) * 100, 2)
@@ -228,6 +455,10 @@ async def analyze(
         "bridge_name": bridge_name,
         "location": location,
         "engineer_name": engineer_name,
+        "bridge_element": bridge_element,
+        "image_quality": image_quality,
+        "scale_reference_available": scale_reference_available,
+        "total_risk": total_risk,
         "detections": detections,
         "priority": priority,
         "recommendation": recommendation,
@@ -245,18 +476,22 @@ async def analyze(
         "bridge_name": bridge_name,
         "location": location,
         "engineer_name": engineer_name,
+        "bridge_element": bridge_element,
+        "image_quality": image_quality,
+        "scale_reference_available": scale_reference_available,
         "model_classes": model.names,
         "defect_count": defect_count,
         "detections": detections,
         "average_confidence": average_confidence,
+        "visual_priority_score": health_score,
         "health_score": health_score,
+        "total_risk_points": total_risk,
         "preliminary_priority": priority,
         "recommendation": recommendation,
         "inspection_time": inspection_time,
         "result_image_url": f"/result-image/{result_filename}",
         "note": (
-            "This is AI-assisted visual prioritization, "
-            "not structural safety certification."
+            "This is an AI visual inspection priority score, not an official structural condition rating or safety certification."
         ),
     }
 
@@ -289,6 +524,7 @@ def dashboard_summary():
         "MEDIUM": 0,
         "HIGH": 0,
         "CRITICAL": 0,
+        "MANUAL_REVIEW": 0,
     }
 
     total_defects = 0
@@ -470,6 +706,9 @@ def generate_report():
         ("Bridge Name", latest_analysis.get("bridge_name", "Not provided")),
         ("Location", latest_analysis.get("location", "Not provided")),
         ("Engineer", latest_analysis.get("engineer_name", "Not provided")),
+        ("Bridge Element", latest_analysis.get("bridge_element", "Unknown")),
+        ("Image Quality", latest_analysis.get("image_quality", "Unknown")),
+        ("Scale Reference", latest_analysis.get("scale_reference_available", "No")),
         ("Inspection Time", latest_analysis.get("inspection_time", "Not available")),
         ("Image", latest_analysis.get("filename", "Unknown")),
     ]
@@ -492,7 +731,7 @@ def generate_report():
 
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(56, y - 24, "Infrastructure Health Score")
+    c.drawString(56, y - 24, "AI Visual Inspection Priority Score")
 
     c.setFont("Helvetica-Bold", 26)
     c.drawString(56, y - 58, f"{health_score} / 100")
@@ -535,13 +774,17 @@ def generate_report():
         c.setFillColor(colors.black)
         c.setFont("Helvetica-Bold", 9.5)
         c.drawString(58, y - 11, "Defect")
-        c.drawString(250, y - 11, "Confidence")
+        c.drawString(205, y - 11, "Confidence")
+        c.drawString(300, y - 11, "Extent")
+        c.drawString(385, y - 11, "Severity")
         y -= 30
 
         for detection in detections:
             c.setFont("Helvetica", 9.5)
             c.drawString(58, y, str(detection["defect"]))
-            c.drawString(250, y, f'{detection["confidence"]}%')
+            c.drawString(205, y, f'{detection["confidence"]}%')
+            c.drawString(300, y, f'{round(detection.get("area_ratio", 0) * 100, 2)}%')
+            c.drawString(385, y, str(detection.get("severity_points", 0)))
             y -= 18
 
     y -= 10
@@ -666,7 +909,7 @@ def generate_report():
     c.drawString(
         42,
         42,
-        "AI-assisted visual prioritization only. Final structural assessment must be performed by a qualified engineer.",
+        "Preliminary AI visual screening only. Not an official condition rating or structural safety certification.",
     )
 
     c.save()
